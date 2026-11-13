@@ -354,7 +354,7 @@ sequenceDiagram
     DB-->>StudentApp: Các ScoreRecord
     StudentApp->>StudentApp: Lọc chỉ các kết quả đã công bố
     StudentApp-->>HV: Hiển thị điểm, nhận xét và biểu đồ
-    UI-->>GV: Điểm đã chốt; Admin cần mở khóa nếu muốn sửa lại
+    UI-->>GV: Điểm đã chốt, Admin cần mở khóa nếu muốn sửa lại
 ```
 
 ## 7. Biểu đồ tuần tự: học viên nộp bài tập
