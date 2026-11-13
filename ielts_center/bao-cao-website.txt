@@ -1,159 +1,642 @@
-BÁO CÁO WEBSITE QUẢN LÝ TRUNG TÂM IELTS
-=======================================
+BÁO CÁO ĐỒ ÁN
+TRANG WEB QUẢN LÝ TRUNG TÂM IELTS
 
-1. Mục đích và phạm vi
-----------------------
-Website là ứng dụng quản lý đào tạo cho một trung tâm IELTS, gồm ba vai trò:
-Quản trị viên, Giáo viên và Học viên. Các chức năng tập trung vào quản lý khóa
-học, lớp, lịch học, hồ sơ, ghi danh và kết quả IELTS.
+TÓM TẮT
 
-Báo cáo này mô tả các chức năng đang có trong mã nguồn và README. Website hiện
-là ứng dụng web phục vụ quản lý và theo dõi học tập; không nên hiểu là một hệ
-thống quản trị trung tâm đầy đủ mọi nghiệp vụ.
+Đề tài xây dựng một ứng dụng web hỗ trợ quản lý một số nghiệp vụ đào tạo tại
+trung tâm IELTS. Hệ thống tổ chức chức năng theo ba vai trò Quản trị viên,
+Giáo viên và Học viên; dữ liệu được quản lý bằng SQLite thông qua
+Flask-SQLAlchemy. Các nghiệp vụ chính gồm quản lý khóa học, lớp học, lịch học,
+hồ sơ, ghi danh, điểm danh, bài tập và kết quả đánh giá. Hệ thống cũng có các
+quy tắc kiểm tra dữ liệu, phân quyền truy cập theo vai trò, ghi nhật ký thay
+đổi điểm, xuất bảng điểm theo định dạng giá trị phân tách bằng dấu phẩy
+(Comma-Separated Values - CSV) và hiển thị tiến độ điểm bằng biểu đồ.
 
-2. Công nghệ và cách vận hành
------------------------------
-- Backend: Python và Flask; các nhóm route được tách thành blueprint.
-- Dữ liệu: SQLite, truy cập qua Flask-SQLAlchemy.
-- Giao diện: Jinja2, HTML, CSS, JavaScript và Bootstrap 5.
-- Biểu đồ kết quả học tập: Chart.js.
-- Đăng nhập: Flask-Login; mật khẩu được băm bằng Werkzeug.
-- Bootstrap, Bootstrap Icons và Chart.js được lưu trong static/vendor, nên các
-  thư viện giao diện này không cần tải từ Internet khi chạy.
-- Có script seed.py tạo dữ liệu mẫu và tests_smoke.py để kiểm thử các luồng chính.
+Báo cáo được xây dựng trên cơ sở README, mã nguồn, mô hình dữ liệu, sơ đồ phân
+tích thiết kế và script kiểm thử có trong dự án [1]. Nội dung phân biệt chức
+năng đã được triển khai với những nghiệp vụ chưa được hệ thống bao phủ. Dự án
+hiện phù hợp cho mục đích học tập, trình diễn và thử nghiệm quy mô nhỏ; tài liệu
+hiện có chưa cung cấp số liệu kiểm thử tải, đánh giá người dùng thực tế hoặc
+bằng chứng triển khai sản xuất.
 
-3. Chức năng dùng chung
------------------------
-- Đăng nhập và điều hướng đến trang chủ theo vai trò; đăng xuất.
-- Đổi mật khẩu khi đã đăng nhập.
-- Gửi yêu cầu quên mật khẩu bằng tên đăng nhập và email. Yêu cầu được lưu để
-  quản trị viên xử lý, không có quy trình gửi email tự động.
-- Tài khoản không phải quản trị viên có thể bị khóa sau 5 lần nhập sai mật khẩu.
-  Quản trị viên có thể khóa/mở tài khoản và đặt lại mật khẩu.
-- Các trang lỗi 403 và 404 được cung cấp cho truy cập không được phép hoặc
-  không tìm thấy tài nguyên.
-- Giao diện có điều hướng theo vai trò, thông báo thao tác, lọc nhanh một số
-  bảng và hộp xác nhận cho các thao tác được gắn xác nhận.
+Từ khóa: Flask, SQLite, quản lý đào tạo, trung tâm IELTS, phân quyền, điểm danh,
+bài tập, kết quả học tập.
 
-4. Chức năng theo vai trò
--------------------------
+DANH MỤC TỪ VIẾT TẮT
 
-4.1. Quản trị viên
-- Trang tổng quan hiển thị các số liệu như khóa học, lớp, giáo viên, học viên,
-  ghi danh, tài khoản bị khóa, yêu cầu đặt lại mật khẩu và lớp chưa có giáo viên.
-- Khóa học: xem/tìm theo mã hoặc tên, tạo, sửa và bật/tắt tuyển sinh.
-- Lớp học: xem và lọc theo trạng thái; tạo, sửa, xem chi tiết, gán giáo viên,
-  chọn khóa học, phòng học, ngày khai giảng và sĩ số tối đa; thay đổi trạng thái.
-  Lớp chỉ được xóa khi không còn học viên đang học/bảo lưu và không có lịch sử điểm.
-- Lịch học: thêm, sửa, xóa buổi học; kiểm tra giờ bắt đầu-kết thúc, lịch trùng
-  trong cùng lớp, lịch giáo viên và sử dụng trùng phòng giữa các lớp.
-- Giáo viên: xem/tìm kiếm, tạo hồ sơ kèm tài khoản, cập nhật hồ sơ và bật/tắt
-  hoạt động. Không thể ngừng giáo viên khi vẫn còn lớp đang mở hoặc đang dạy.
-- Học viên: xem/tìm theo họ tên, tên đăng nhập hoặc mã học viên; tạo hồ sơ kèm
-  tài khoản, cập nhật thông tin, xem chi tiết và ghi danh vào lớp.
-- Ghi danh: kiểm tra band đầu vào, sĩ số lớp và trạng thái lớp; cập nhật trạng
-  thái học viên như đang học, bảo lưu, hoàn thành hoặc đã nghỉ. Xóa học viên
-  khỏi lớp được thực hiện bằng trạng thái đã nghỉ để giữ lịch sử.
-- Tài khoản: tạo tài khoản, lọc theo vai trò, gán vai trò, khóa/mở, đặt lại mật
-  khẩu và xem các yêu cầu quên mật khẩu chưa xử lý. Đặt lại mật khẩu đồng thời
-  đánh dấu các yêu cầu của tài khoản đó là đã xử lý.
-- Kết quả: xem tối đa 100 điểm đã công bố gần đây và 30 dòng nhật ký gần đây;
-  mở khóa điểm đã chốt để giáo viên có thể sửa.
+| Từ viết tắt | Thuật ngữ tiếng Anh | Giải nghĩa |
+|---|---|---|
+| CSS | Cascading Style Sheets | Ngôn ngữ định kiểu trang web |
+| CSV | Comma-Separated Values | Định dạng dữ liệu phân tách bằng dấu phẩy |
+| HTML | HyperText Markup Language | Ngôn ngữ đánh dấu siêu văn bản |
+| HTTP | Hypertext Transfer Protocol | Giao thức truyền tải siêu văn bản |
+| IELTS | International English Language Testing System | Hệ thống Kiểm tra Anh ngữ Quốc tế |
+| ORM | Object-Relational Mapping | Ánh xạ đối tượng - quan hệ |
+| URL | Uniform Resource Locator | Bộ định vị tài nguyên thống nhất |
 
-4.2. Giáo viên
-- Trang tổng quan liệt kê các lớp được phân công, tổng số học viên và số trường
-  hợp chưa có kết quả công bố.
-- Xem thời khóa biểu cá nhân theo thứ; các lớp đã hủy/kết thúc không hiện trong
-  lịch dạy.
-- Xem danh sách học viên của lớp, band đầu vào, các kết quả công bố và thống kê
-  điểm trung bình kỹ năng/Overall của lớp.
-- Xem điểm đã công bố của từng học viên trong lớp mình phụ trách.
-- Nhập hoặc sửa điểm theo kỳ cho 4 kỹ năng Listening, Reading, Writing,
-  Speaking; nhập nhận xét; hệ thống tính Overall và ghi nhật ký thay đổi điểm.
-- Điểm hợp lệ nằm trong khoảng 0.0-9.0 và theo bước 0.5. Khi điểm đã công bố,
-  giáo viên không thể sửa cho đến khi quản trị viên mở khóa.
-- Chốt và công bố điểm cho học viên đã có đủ điểm; học viên chỉ xem được kết
-  quả đã công bố.
-- Tải bảng điểm lớp dạng CSV, có thể mở bằng các ứng dụng bảng tính thông dụng.
+QUY ƯỚC TRÌNH BÀY
 
-4.3. Học viên
-- Trang cá nhân tổng hợp các lớp ghi danh, lớp đang học và kết quả gần nhất
-  theo logic hiện tại của ứng dụng.
-- Xem các khóa học đang mở cùng band đầu vào, band mục tiêu, số buổi và học phí.
-- Xem chi tiết lớp mình có ghi danh (trừ ghi danh đã nghỉ), gồm giáo viên,
-  phòng và thời khóa biểu.
-- Xem điểm từng kỹ năng, Overall và nhận xét của giáo viên; chỉ các điểm đã
-  công bố mới được hiển thị.
-- Xem biểu đồ Chart.js theo các kỳ đã công bố, có band đầu vào làm mốc so sánh.
-- Tải bảng điểm cá nhân dạng CSV; file chỉ gồm các điểm đã công bố.
+Tệp này là bản thảo văn bản để chuyển sang Microsoft Word. Khi dàn trang, áp
+dụng quy định của đơn vị đào tạo: tên chương cỡ 18, in hoa, đậm, căn giữa; tiêu
+đề mục cỡ 13, đậm, không lùi đầu dòng; khoảng cách trước đoạn 6 pt và sau đoạn
+0 pt. Bảng và hình được đánh số theo chương, có tiêu đề và được dẫn chiếu trong
+nội dung. Không có thông tin về sinh viên, giảng viên hướng dẫn hoặc cơ sở thực
+tập trong tài liệu đầu vào nên báo cáo không tự điền các thông tin này.
 
-5. Quy tắc nghiệp vụ và dữ liệu
--------------------------------
-- Overall là trung bình bốn kỹ năng và được làm tròn theo quy tắc band IELTS:
-  phần lẻ nhỏ hơn .25 làm tròn xuống, từ .25 đến nhỏ hơn .75 thành .5, còn lại
-  làm tròn lên band tiếp theo.
-- Điểm kỹ năng nhận các giá trị từ 0.0 đến 9.0 theo bước 0.5.
-- Band mục tiêu của khóa học phải cao hơn band đầu vào.
-- Khi xếp lớp, học viên cần có band đầu vào; lớp phải còn chỗ và chưa đóng/hủy;
-  band đầu vào phải đạt mức tối thiểu của khóa học.
-- Kiểm tra lịch học có xét trùng giờ của lớp, giáo viên và phòng học.
-- Giáo viên chỉ truy cập được các lớp được phân công; học viên chỉ xem dữ liệu
-  ghi danh và kết quả của mình; khu vực quản trị yêu cầu vai trò quản trị viên.
-- Hồ sơ giáo viên/học viên được lưu lại bằng trạng thái hoạt động thay vì xóa
-  trực tiếp trong các luồng quản lý thông thường.
-- Các lần nhập/sửa, chốt và mở khóa điểm tạo bản ghi ScoreLog, có thông tin
-  người thao tác, thời điểm, giá trị cũ/mới và hành động.
 
-Dữ liệu được tổ chức quanh tài khoản và hồ sơ, khóa học, lớp, lịch học, ghi danh,
-kết quả, nhật ký điểm và yêu cầu đặt lại mật khẩu. Database SQLite được tạo khi
-ứng dụng khởi động; seed.py cung cấp bộ dữ liệu để trình diễn.
+CHƯƠNG 1. TỔNG QUAN VỀ ĐỀ TÀI
 
-6. Điểm mạnh
-------------
-- Phân chia rõ các luồng theo ba vai trò; một số ràng buộc quyền được kiểm tra
-  ở phía server, không chỉ ẩn/hiện nút trên giao diện.
-- Bao phủ được chu trình quản lý đào tạo cơ bản: khóa học, lớp, lịch, hồ sơ,
-  ghi danh và theo dõi điểm.
-- Có các kiểm tra dữ liệu thực tế cho band, sĩ số, trạng thái lớp và xung đột
-  lịch, giúp hạn chế một số lỗi thao tác.
-- Điểm có luồng công bố/mở khóa và nhật ký, hỗ trợ đối chiếu thay đổi.
-- Học viên không thấy điểm chưa công bố; giáo viên được giới hạn theo lớp phụ
-  trách.
-- Có CSV để tải kết quả và biểu đồ để học viên theo dõi band theo thời gian.
-- Các thư viện giao diện chính được đóng gói cùng ứng dụng, thuận tiện cho demo
-  không có Internet.
-- Có dữ liệu mẫu và script smoke test để hỗ trợ khởi động, trình diễn và kiểm
-  thử nhanh các luồng.
+1.1 Bối cảnh và lý do chọn đề tài
 
-7. Hạn chế và phạm vi chưa bao phủ
-----------------------------------
-- Ứng dụng chưa có các nghiệp vụ như thu học phí/thanh toán, điểm danh, quản lý
-  bài tập/tài liệu, lớp học trực tuyến, nhắn tin hay thông báo qua email.
-- Quên mật khẩu hiện chỉ tạo yêu cầu để quản trị viên xử lý thủ công; không có
-  liên kết đặt lại mật khẩu, mã xác minh hay email tự động.
-- Xuất dữ liệu chỉ là CSV, chưa có báo cáo Excel/PDF, tùy chọn cột, bộ lọc hay
-  phân tích tổng hợp chuyên sâu. Trang kết quả quản trị giới hạn danh sách hiển
-  thị gần đây ở 100 điểm và 30 dòng nhật ký.
-- Kiểm thử được cung cấp là smoke test cho luồng chính; báo cáo này không khẳng
-  định đã có kiểm thử đầy đủ về tải, bảo mật, khả năng truy cập hoặc môi trường
-  triển khai.
-- SQLite và cấu hình chạy hiện tại phù hợp hơn với demo/vận hành quy mô nhỏ;
-  chưa thể hiện các cơ chế sao lưu, phân quyền vận hành, giám sát hay mở rộng
-  cho nhiều máy chủ.
-- README cung cấp tài khoản mẫu với mật khẩu đơn giản; config.py có SECRET_KEY
-  mặc định và app.py chạy debug khi được chạy trực tiếp. Cần thay cấu hình này,
-  đổi mật khẩu mẫu và đánh giá thêm bảo mật trước khi đưa lên môi trường thật.
-- Một số chức năng thao tác trên bảng/lớp phụ thuộc vào việc lọc/tìm kiếm và
-  thông báo trên giao diện; chưa có giao diện báo cáo tùy biến cho từng người dùng.
+Hoạt động đào tạo tại một trung tâm ngoại ngữ liên quan đến nhiều nhóm dữ liệu:
+chương trình học, lớp mở theo từng đợt, lịch giảng dạy, thông tin người học,
+điểm danh, bài tập và kết quả đánh giá. Khi các thông tin này được theo dõi
+không tập trung, việc tra cứu tiến độ, kiểm soát quyền xem dữ liệu và đối chiếu
+thay đổi có thể trở nên khó khăn. Một ứng dụng web có phân quyền giúp mô hình
+hóa các nghiệp vụ trên thành những luồng thao tác thống nhất.
 
-8. Kết luận
------------
-Website hiện đáp ứng được các nhu cầu quản lý cơ bản xoay quanh khóa học, lớp,
-lịch, hồ sơ, ghi danh và điểm IELTS, với phân quyền theo vai trò và một số quy
-tắc nghiệp vụ quan trọng. Các điểm mạnh phù hợp cho mục đích học tập, demo hoặc
-quản lý quy mô nhỏ.
+Đề tài lựa chọn xây dựng trang web quản lý trung tâm IELTS nhằm thực hành quy
+trình phân tích, thiết kế và phát triển một ứng dụng web có dữ liệu liên kết.
+Phạm vi triển khai tập trung vào quản lý đào tạo và theo dõi học tập, không
+nhằm thay thế toàn bộ hệ thống quản trị kinh doanh của một trung tâm. Các chức
+năng được mô tả trong báo cáo được đối chiếu với mã nguồn và tài liệu dự án;
+báo cáo không xem các nhu cầu nghiệp vụ chưa có trong hệ thống là kết quả đã
+đạt được [1].
 
-Hệ thống chưa thay thế một nền tảng quản lý trung tâm đầy đủ và chưa nên triển
-khai công khai với cấu hình mặc định. Các ưu tiên phát triển tiếp theo có thể
-gồm bảo mật/cấu hình sản xuất, quy trình email đặt lại mật khẩu, sao lưu dữ liệu,
-nghiệp vụ học phí-điểm danh và kiểm thử bao phủ hơn.
+1.2 Mục tiêu đề tài
+
+1.2.1 Mục tiêu tổng quát
+
+Xây dựng một ứng dụng web cho phép Quản trị viên quản lý dữ liệu đào tạo, Giáo
+viên thực hiện một số nghiệp vụ trên các lớp được phân công và Học viên theo
+dõi thông tin học tập của bản thân.
+
+1.2.2 Mục tiêu cụ thể
+
+- Tổ chức chức năng theo ba vai trò và kiểm tra quyền truy cập ở phía máy chủ.
+- Quản lý khóa học, lớp, lịch học, hồ sơ giáo viên, hồ sơ học viên và ghi danh.
+- Hỗ trợ giáo viên ghi nhận điểm danh, giao bài tập, nhập điểm theo kỳ và công
+  bố kết quả.
+- Cung cấp cho học viên quyền xem điểm đã công bố, lịch sử điểm danh, bài tập
+  và tiến độ điểm; cho phép nộp tệp bài tập.
+- Áp dụng một số quy tắc nghiệp vụ như kiểm tra band đầu vào, sĩ số, xung đột
+  lịch và giá trị điểm; lưu nhật ký các thao tác liên quan đến điểm.
+- Cung cấp dữ liệu mẫu và script kiểm thử nhanh cho các luồng chính.
+
+1.3 Đối tượng và phạm vi nghiên cứu
+
+Đối tượng nghiên cứu là quy trình quản lý thông tin đào tạo và theo dõi học tập
+được thể hiện trong ứng dụng: tài khoản, khóa học, lớp, thời khóa biểu, ghi
+danh, điểm danh, bài tập và kết quả IELTS. Tác nhân tương tác với hệ thống gồm
+Quản trị viên, Giáo viên và Học viên.
+
+Phạm vi chức năng đã triển khai gồm quản lý dữ liệu đào tạo, phân quyền theo
+vai trò, ghi nhận điểm danh, giao và nộp bài tập, quản lý kết quả đánh giá,
+thống kê tiến độ đơn giản, tải bảng điểm CSV và xử lý yêu cầu quên mật khẩu
+theo hình thức quản trị viên tiếp nhận thủ công. Dữ liệu được lưu trong SQLite;
+tệp bài tập được lưu trong thư mục riêng của ứng dụng và được tải thông qua
+các route có kiểm tra quyền [1].
+
+Đề tài không bao gồm thu học phí hoặc thanh toán trực tuyến, quản lý lớp học
+trực tuyến, nhắn tin, gửi email tự động, chấm điểm tự động bài IELTS, hay tích
+hợp với hệ thống bên ngoài. Tài liệu đầu vào cũng không mô tả một cơ sở thực
+tập hoặc kết quả khảo sát người dùng cụ thể; vì vậy, phần khảo sát thực trạng
+được giới hạn ở việc phân tích yêu cầu và dữ liệu thể hiện trong dự án, không
+được xem là khảo sát tại một trung tâm đang hoạt động.
+
+1.4 Phương pháp thực hiện
+
+Báo cáo sử dụng phương pháp phân tích tài liệu và mã nguồn hiện có. Trước hết,
+các vai trò, route, mô hình dữ liệu, quy tắc nghiệp vụ và script kiểm thử được
+đối chiếu để xác định phạm vi thực tế. Tiếp theo, các chức năng được nhóm theo
+tác nhân và quy trình, từ đó trình bày kiến trúc, dữ liệu và các luồng nghiệp
+vụ. Cuối cùng, phạm vi kiểm thử được mô tả dựa trên nội dung của
+tests_smoke.py. Tài liệu dự án có các sơ đồ use case, sơ đồ lớp và sơ đồ quy
+trình hỗ trợ cho phần phân tích thiết kế [1].
+
+Không có dữ liệu trong tài liệu đầu vào chứng minh đã thực hiện phỏng vấn,
+khảo sát định lượng, kiểm thử tải hoặc đánh giá mức độ hài lòng. Do đó, báo cáo
+không đưa ra các kết luận hay số liệu cho những hoạt động này.
+
+1.5 Ý nghĩa khoa học và thực tiễn
+
+Về mặt học tập, đề tài vận dụng kiến thức xây dựng ứng dụng web, tổ chức dữ
+liệu quan hệ, xác thực người dùng, kiểm soát quyền và kiểm tra dữ liệu đầu vào.
+Các quy tắc như điều kiện ghi danh, kiểm tra trùng lịch và công bố điểm được
+thể hiện trong các luồng xử lý cụ thể, giúp minh họa cách chuyển yêu cầu nghiệp
+vụ thành chức năng phần mềm.
+
+Về mặt thực tiễn, ứng dụng cung cấp một mô hình thử nghiệm để quản lý các thông
+tin đào tạo cơ bản và theo dõi quá trình học tập. Tuy nhiên, do chưa có đánh
+giá tại môi trường vận hành thực tế, chưa có quy trình sao lưu và giám sát được
+mô tả, và còn một số cấu hình cần thay đổi trước khi triển khai, chưa thể kết
+luận hệ thống đã sẵn sàng sử dụng công khai hoặc thay thế một nền tảng quản lý
+trung tâm hoàn chỉnh.
+
+1.6 Kết cấu báo cáo
+
+Báo cáo gồm bốn chương. Chương 1 giới thiệu đề tài, mục tiêu và phạm vi.
+Chương 2 trình bày cơ sở công nghệ và các khái niệm được sử dụng. Chương 3
+phân tích yêu cầu, kiến trúc, mô hình dữ liệu và quy trình nghiệp vụ. Chương 4
+mô tả triển khai, phạm vi kiểm thử, kết quả đối chiếu và hạn chế. Phần cuối
+gồm kết luận, tài liệu tham khảo và phụ lục hướng dẫn.
+
+
+CHƯƠNG 2. CƠ SỞ LÝ THUYẾT VÀ CÔNG NGHỆ
+
+2.1 Ứng dụng web và kiến trúc xử lý yêu cầu
+
+Ứng dụng web cho phép người dùng gửi yêu cầu từ trình duyệt đến máy chủ thông
+qua bộ định vị tài nguyên thống nhất (Uniform Resource Locator - URL) và giao
+thức truyền tải siêu văn bản (Hypertext Transfer Protocol - HTTP); máy chủ xử
+lý yêu cầu, truy cập dữ liệu và trả về nội dung phù hợp. Flask cung cấp cơ chế
+định tuyến để ánh xạ URL đến hàm xử lý, đồng thời hỗ trợ kết xuất mẫu HTML và
+quản lý tài nguyên tĩnh [2].
+
+Trong đề tài, các trang được kết xuất phía máy chủ bằng Jinja2. Các blueprint
+chia route theo nhóm chức năng; dữ liệu được truy vấn hoặc cập nhật bởi lớp
+nghiệp vụ rồi hiển thị trong giao diện. Mô hình này phù hợp với quy mô và cấu
+trúc hiện tại của dự án, nhưng không đồng nghĩa hệ thống đã được thiết kế để
+mở rộng theo kiến trúc nhiều dịch vụ.
+
+2.2 Công nghệ sử dụng
+
+2.2.1 Python và Flask
+
+Python là ngôn ngữ lập trình phía máy chủ. Flask là framework web được dùng để
+khởi tạo ứng dụng, khai báo route, đăng ký blueprint, kết xuất trang và xử lý
+một số mã lỗi. Ứng dụng được khởi tạo trong app.py; các blueprint xác thực,
+quản trị, giáo viên và học viên được đăng ký tại bước khởi tạo [1], [2].
+
+Flask phù hợp với đề tài vì cung cấp các thành phần cần thiết để xây dựng một
+ứng dụng web gọn, đồng thời cho phép tổ chức route theo chức năng. Máy chủ phát
+triển tích hợp của Flask phù hợp cho quá trình thử nghiệm, không được xem là
+cấu hình triển khai sản xuất [2].
+
+2.2.2 Flask-SQLAlchemy và SQLite
+
+Flask-SQLAlchemy là phần mở rộng kết nối ánh xạ đối tượng - quan hệ
+(Object-Relational Mapping - ORM) của SQLAlchemy với ứng dụng Flask, hỗ trợ
+định nghĩa mô hình và làm việc với phiên dữ liệu trong ngữ cảnh ứng dụng
+[3]. Trong dự án, các thực thể như User, Course, ClassRoom, Enrollment,
+AttendanceRecord, Homework và ScoreRecord được biểu diễn bằng các lớp mô hình.
+SQLite được chọn làm cơ sở dữ liệu tệp, còn cấu hình hiện tại đặt cơ sở dữ liệu
+trong thư mục instance [1].
+
+Mô hình ORM giúp biểu diễn các quan hệ giữa tài khoản, hồ sơ, lớp và các bản
+ghi phát sinh. SQLite giảm yêu cầu cài đặt máy chủ cơ sở dữ liệu riêng, thuận
+tiện cho chạy thử và trình diễn. Tuy nhiên, cấu hình hiện tại chưa cung cấp
+bằng chứng về quy trình sao lưu, phục hồi, giám sát, phân quyền vận hành hoặc
+đánh giá khả năng chịu tải; vì vậy, không nên suy rộng tính phù hợp của cấu
+hình này sang hệ thống có nhiều người dùng đồng thời hoặc yêu cầu sẵn sàng cao.
+
+2.2.3 Jinja2, HTML, CSS, JavaScript và Bootstrap
+
+Jinja2 là bộ máy mẫu dùng để kết hợp dữ liệu với ngôn ngữ đánh dấu siêu văn bản
+(HyperText Markup Language - HTML). Các mẫu có thể chứa biến và cấu trúc điều
+khiển để tạo ra nội dung trang theo dữ liệu do ứng dụng cung cấp [4]. Giao diện
+dự án dùng các mẫu Jinja2, Cascading Style Sheets (CSS) và JavaScript; các
+thành phần Bootstrap hỗ trợ bố cục và thành phần giao diện web [5]. Dự án cũng
+đóng gói một số thư viện giao diện trong static/vendor để các tài nguyên này
+có thể được phục vụ từ ứng dụng khi chạy không có Internet [1].
+
+2.2.4 Chart.js
+
+Chart.js là thư viện JavaScript dùng để tạo biểu đồ trên trang web [6]. Trong
+đề tài, thư viện được dùng để biểu diễn kết quả các kỳ đã công bố theo bốn kỹ
+năng và Overall. Band đầu vào được sử dụng làm mốc so sánh trong dữ liệu biểu
+đồ của học viên. Biểu đồ chỉ trực quan hóa những dữ liệu mà ứng dụng đã lưu;
+nó không thực hiện dự báo hoặc đánh giá năng lực độc lập [1].
+
+2.3 Xác thực và phân quyền
+
+Xác thực xác định người dùng đã đăng nhập; phân quyền xác định người dùng được
+phép truy cập chức năng hoặc dữ liệu nào. Flask-Login hỗ trợ quản lý phiên đăng
+nhập và trạng thái người dùng, nhưng việc phân quyền theo vai trò cần được
+ứng dụng tự tổ chức [7].
+
+Trong dự án, tài khoản có vai trò Quản trị viên, Giáo viên hoặc Học viên. Các
+blueprint có kiểm tra vai trò trước khi xử lý route. Ngoài kiểm tra vai trò,
+một số chức năng còn giới hạn dữ liệu theo lớp được phân công hoặc theo hồ sơ
+học viên đang đăng nhập. Mật khẩu được lưu dưới dạng băm qua Werkzeug thay vì
+lưu trực tiếp dạng văn bản [1].
+
+2.4 Mô hình điểm IELTS trong hệ thống
+
+IELTS báo cáo điểm Overall bằng trung bình của bốn thành phần Listening,
+Reading, Writing và Speaking, sau đó làm tròn đến nửa band gần nhất. Theo
+hướng dẫn chấm điểm của IELTS, trung bình kết thúc ở .25 được làm tròn lên nửa
+band kế tiếp, còn kết thúc ở .75 được làm tròn lên band nguyên tiếp theo [8].
+
+Hệ thống lưu điểm kỹ năng theo thang 0.0 đến 9.0, bước 0.5. Hàm tính Overall
+lấy trung bình bốn kỹ năng và áp dụng các ngưỡng làm tròn đã cài đặt. Không
+tính Overall khi còn thiếu một trong bốn kỹ năng. Kết quả được lưu cùng kỳ
+đánh giá, nhận xét, trạng thái công bố và nhật ký thay đổi [1].
+
+2.5 Cơ sở lựa chọn giải pháp
+
+Các công nghệ Flask, Flask-SQLAlchemy, SQLite, Jinja2, Bootstrap và Chart.js
+được lựa chọn đồng bộ với quy mô ứng dụng web trong dự án. Flask và blueprint
+hỗ trợ nhóm route; ORM biểu diễn dữ liệu quan hệ; Jinja2 kết xuất các trang
+theo vai trò; Chart.js hiển thị dữ liệu điểm. Cấu hình SQLite và tài nguyên
+giao diện đóng gói sẵn thuận tiện cho cài đặt trình diễn. Đổi lại, muốn vận
+hành ở quy mô lớn hơn cần đánh giá lại hạ tầng, quản lý bí mật, sao lưu, kiểm
+thử, bảo mật và khả năng mở rộng thay vì chỉ dựa vào các lựa chọn hiện tại.
+
+
+CHƯƠNG 3. PHÂN TÍCH VÀ THIẾT KẾ HỆ THỐNG
+
+3.1 Cơ sở phân tích yêu cầu
+
+Yêu cầu được tổng hợp từ tài liệu dự án, README, các route, mô hình dữ liệu và
+script tests_smoke.py [1]. Từ đó, báo cáo phân nhóm chức năng theo ba tác nhân
+và theo dữ liệu mà mỗi tác nhân cần thao tác. Không có biên bản khảo sát tại
+trung tâm hoặc đặc tả yêu cầu do người dùng thực tế ký xác nhận trong tài liệu
+đầu vào; phạm vi yêu cầu trong chương này vì vậy mô tả yêu cầu được thể hiện
+trong phần mềm, không đại diện cho một khảo sát độc lập.
+
+3.2 Tác nhân và chức năng chính
+
+Ba tác nhân của hệ thống là Quản trị viên, Giáo viên và Học viên. Bảng 3.1 tổng
+hợp nhóm chức năng chính theo từng tác nhân, làm cơ sở cho thiết kế các
+blueprint và quyền truy cập.
+
+Bảng 3.1. Nhóm chức năng theo tác nhân
+
+| Tác nhân | Chức năng chính |
+|---|---|
+| Quản trị viên | Quản lý khóa học, lớp, lịch, hồ sơ, ghi danh và tài khoản; xem báo cáo điểm danh, kết quả; mở khóa điểm đã chốt. |
+| Giáo viên | Xem lớp và lịch được phân công; quản lý bài tập; điểm danh; xem tiến độ; nhập, chốt và xuất điểm lớp. |
+| Học viên | Xem khóa học và lớp đã ghi danh; xem điểm danh, bài tập và kết quả đã công bố; nộp bài; tải bảng điểm cá nhân. |
+
+3.3 Yêu cầu chức năng
+
+3.3.1 Chức năng dùng chung
+
+Người dùng có thể đăng nhập, đăng xuất và đổi mật khẩu. Người chưa đăng nhập
+được chuyển đến trang đăng nhập khi truy cập các phân hệ cần xác thực. Chức
+năng quên mật khẩu tạo yêu cầu để Quản trị viên xử lý; hệ thống không gửi liên
+kết hoặc thư điện tử tự động. Tài khoản không phải Quản trị viên có thể bị khóa
+sau số lần đăng nhập sai được cấu hình là năm [1].
+
+3.3.2 Chức năng quản trị
+
+Quản trị viên quản lý thông tin khóa học, lớp học, lịch học, hồ sơ giáo viên,
+hồ sơ học viên, ghi danh và tài khoản. Việc ghi danh cần kiểm tra band đầu vào,
+trạng thái lớp, sĩ số và ghi danh trùng. Hồ sơ hoặc lượt ghi danh được duy trì
+bằng trạng thái trong các luồng thông thường để bảo toàn lịch sử liên quan.
+Quản trị viên có thể xem dữ liệu điểm danh và kết quả, đồng thời mở khóa điểm
+đã chốt theo quy trình được cài đặt.
+
+3.3.3 Chức năng giáo viên
+
+Giáo viên xem các lớp được phân công, thời khóa biểu và thông tin học viên
+thuộc lớp. Giáo viên có thể ghi nhận trạng thái điểm danh, giao và chỉnh sửa
+bài tập, đính kèm tài liệu, theo dõi và tải tệp bài nộp, nhập nhận xét và điểm
+theo kỳ, chốt điểm, cũng như xuất bảng điểm lớp dạng CSV. Giáo viên không được
+truy cập lớp do người khác phụ trách.
+
+3.3.4 Chức năng học viên
+
+Học viên xem thông tin khóa học đang mở và lớp có ghi danh; xem điểm danh, đề
+bài và tài liệu của lớp; nộp một hoặc nhiều tệp cho bài tập; xem trạng thái
+nộp đúng hạn hoặc muộn; xem nhận xét, điểm và biểu đồ cho các kết quả đã công
+bố; tải bảng điểm cá nhân dạng CSV. Học viên chỉ được truy cập dữ liệu gắn với
+tài khoản của mình theo các kiểm tra của ứng dụng.
+
+3.4 Yêu cầu phi chức năng và giới hạn
+
+Hệ thống cần phân biệt quyền truy cập, kiểm tra dữ liệu đầu vào và thông báo
+lỗi nghiệp vụ để hạn chế thao tác không hợp lệ. Tệp bài tập được giới hạn theo
+đuôi tệp cho phép, được lưu bằng tên nội bộ ngẫu nhiên và chỉ tải qua route có
+kiểm tra quyền. Cấu hình hiện tại giới hạn kích thước yêu cầu tải lên ở 64 MB
+và số tệp trong một lần tải lên ở mức tối đa 10 [1].
+
+Các yêu cầu phi chức năng như thời gian phản hồi dưới một ngưỡng xác định, khả
+năng chịu tải, tính sẵn sàng, khả năng truy cập cho người khuyết tật và cơ chế
+sao lưu định kỳ chưa có chỉ tiêu hoặc kết quả đo trong tài liệu dự án. Báo cáo
+không khẳng định các yêu cầu này đã được kiểm chứng.
+
+3.5 Kiến trúc tổng thể
+
+Ứng dụng được tổ chức như một ứng dụng Flask duy nhất, chia thành các blueprint
+theo chức năng. Trình duyệt gửi yêu cầu đến route; lớp xử lý kiểm tra đăng nhập,
+vai trò và điều kiện nghiệp vụ; SQLAlchemy truy vấn hoặc cập nhật SQLite; các
+mẫu Jinja2 tạo trang HTML trả về. Tệp bài tập được ghi vào vùng lưu trữ riêng
+trong thư mục instance và không được phục vụ như tài nguyên tĩnh công khai [1].
+Kiến trúc logic được khái quát trong Hình 3.1.
+
+```mermaid
+flowchart LR
+    U["Quản trị viên / Giáo viên / Học viên"]
+    B["Trình duyệt"]
+    W["Flask<br/>Auth và các blueprint"]
+    M["Mô hình nghiệp vụ<br/>phân quyền, kiểm tra và xử lý"]
+    D[("SQLite<br/>Flask-SQLAlchemy")]
+    F[("Kho tệp bài tập<br/>thư mục riêng")]
+    T["Jinja2, HTML, CSS, JavaScript"]
+
+    U --> B
+    B --> W
+    W --> M
+    M --> D
+    M --> F
+    M --> T
+    T --> B
+```
+
+Hình 3.1. Kiến trúc logic của ứng dụng quản lý trung tâm IELTS
+
+3.6 Thiết kế dữ liệu
+
+Dữ liệu được tổ chức thành 15 mô hình chính. Bảng 3.2 nhóm các mô hình theo
+nghiệp vụ và nêu mục đích của từng nhóm; quan hệ chi tiết giữa chúng được trình
+bày trong sơ đồ lớp của tài liệu phân tích thiết kế [1].
+
+Bảng 3.2. Các mô hình dữ liệu chính
+
+| Nhóm dữ liệu | Mô hình | Vai trò trong hệ thống |
+|---|---|---|
+| Tài khoản và hồ sơ | User, PasswordResetRequest, TeacherProfile, StudentProfile | Lưu thông tin đăng nhập, yêu cầu đặt lại mật khẩu và hồ sơ nghiệp vụ. |
+| Đào tạo và ghi danh | Course, ClassRoom, Schedule, Enrollment | Lưu chương trình học, lớp mở, thời khóa biểu và quan hệ học viên-lớp. |
+| Điểm danh | AttendanceRecord | Lưu tình trạng điểm danh của một lượt ghi danh theo ngày. |
+| Bài tập | Homework, HomeworkMaterial, HomeworkSubmission, HomeworkSubmissionFile | Lưu yêu cầu, hạn nộp, tài liệu đính kèm, các lần nộp và tệp bài làm. |
+| Kết quả | ScoreRecord, ScoreLog | Lưu điểm theo kỳ, trạng thái công bố và lịch sử thay đổi điểm. |
+
+Các mối quan hệ được thể hiện qua khóa ngoại và relationship trong SQLAlchemy.
+Ví dụ, một khóa học có thể được mở thành nhiều lớp; một lớp có nhiều lịch học,
+lượt ghi danh, bài tập và kết quả phát sinh qua các lượt ghi danh. Một điểm có
+thể có nhiều bản ghi nhật ký. Mô hình tách thông tin tài khoản khỏi hồ sơ giáo
+viên/học viên, nhờ đó dữ liệu đăng nhập và dữ liệu nghiệp vụ có cấu trúc riêng
+[1].
+
+3.7 Quy tắc nghiệp vụ
+
+Các quy tắc quan trọng được tóm tắt trong Bảng 3.3. Đây là quy tắc được thể
+hiện trong mã nguồn và tài liệu dự án, không phải toàn bộ quy định vận hành
+của một trung tâm IELTS ngoài thực tế.
+
+Bảng 3.3. Một số quy tắc nghiệp vụ đã triển khai
+
+| Nghiệp vụ | Quy tắc |
+|---|---|
+| Điểm kỹ năng | Nhận giá trị từ 0.0 đến 9.0, theo bước 0.5. |
+| Overall | Lấy trung bình bốn kỹ năng; làm tròn theo ngưỡng .25 và .75; chỉ tính khi đủ bốn kỹ năng. |
+| Khóa học | Band mục tiêu phải cao hơn band đầu vào. |
+| Ghi danh | Kiểm tra band đầu vào, trạng thái lớp, sĩ số và không tạo ghi danh trùng. |
+| Lịch học | Giờ kết thúc phải sau giờ bắt đầu; kiểm tra trùng thời gian trong lớp, trùng lịch giáo viên và trùng phòng giữa các lớp liên quan. |
+| Công bố điểm | Điểm đã chốt bị khóa đối với giáo viên; Quản trị viên có thể mở khóa; thay đổi điểm được ghi nhật ký. |
+| Bài tập | Giới hạn đuôi tệp và số lượng tải lên; bài nộp sau hạn được tiếp nhận và ghi trạng thái muộn. |
+| Phân quyền | Giáo viên giới hạn theo lớp phụ trách; Học viên giới hạn theo dữ liệu của mình; phân hệ quản trị dành cho Quản trị viên. |
+
+3.8 Quy trình nghiệp vụ tiêu biểu
+
+3.8.1 Ghi danh học viên
+
+Quản trị viên chọn học viên và lớp. Hệ thống kiểm tra đối tượng hợp lệ, lớp còn
+nhận học viên, band đầu vào đáp ứng yêu cầu khóa học và chưa tồn tại ghi danh
+trùng. Nếu điều kiện đạt, hệ thống tạo bản ghi Enrollment ở trạng thái đang
+học; nếu không, hiển thị thông báo và không tạo ghi danh. Luồng này được mô tả
+trong sơ đồ hoạt động của tài liệu phân tích thiết kế [1].
+
+3.8.2 Điểm danh
+
+Giáo viên chọn lớp được phân công và ngày điểm danh, sau đó ghi nhận có mặt,
+vắng hoặc đến muộn cho các học viên trong lớp. Hệ thống lưu người ghi nhận,
+thời điểm và trạng thái theo lượt ghi danh và ngày. Giáo viên có thể xem lịch
+sử theo tháng; Quản trị viên có thể xem báo cáo tổng hợp, còn học viên xem dữ
+liệu điểm danh của bản thân [1].
+
+3.8.3 Giao và nộp bài tập
+
+Giáo viên tạo bài tập cho lớp phụ trách, nhập yêu cầu và hạn nộp, đồng thời có
+thể đính kèm tài liệu. Học viên thuộc lớp xem nội dung, tải tài liệu và gửi
+tệp bài làm. Hệ thống kiểm tra loại tệp, số lượng, ghi nhận thời điểm nộp và
+đánh dấu nộp muộn nếu thời điểm đó sau hạn. Giáo viên xem danh sách lần nộp và
+tải tệp của học viên; việc tải tệp đi qua route kiểm tra quan hệ lớp và bài
+tập [1].
+
+3.8.4 Nhập và công bố điểm
+
+Giáo viên chọn kỳ đánh giá, nhập bốn kỹ năng và nhận xét cho học viên trong
+lớp được phân công. Ứng dụng kiểm tra điểm, tính Overall khi đủ dữ liệu và
+ghi nhận lịch sử thay đổi. Khi chốt, điểm được đánh dấu đã công bố và khóa đối
+với chỉnh sửa của giáo viên. Học viên xem các kết quả đã công bố; nếu cần sửa
+lại, Quản trị viên phải mở khóa theo chức năng quản trị [1].
+
+3.9 Thiết kế giao diện
+
+Giao diện sử dụng bố cục chung và điều hướng thay đổi theo vai trò. Các trang
+quản trị ưu tiên danh sách và biểu mẫu quản lý; trang giáo viên tập trung vào
+lớp, điểm danh, bài tập và điểm; trang học viên tập trung vào thông tin lớp,
+điểm danh, bài tập và kết quả. Dữ liệu biểu đồ điểm được tạo từ các kỳ đã công
+bố. Tài liệu dự án có mô tả giao diện trong các mẫu HTML, nhưng chưa cung cấp
+bộ ảnh chụp màn hình để đưa vào báo cáo; vì vậy không chèn hình ảnh giao diện
+không có nguồn xác minh.
+
+
+CHƯƠNG 4. TRIỂN KHAI, KẾT QUẢ VÀ THẢO LUẬN
+
+4.1 Môi trường và cấu trúc triển khai
+
+Dự án yêu cầu Python 3.10 trở lên theo README. Các phụ thuộc được ghim phiên
+bản trong requirements.txt, gồm Flask 3.1.3, Flask-SQLAlchemy 3.1.1 và
+Flask-Login 0.6.3 [1]. Mã nguồn chia các thành phần khởi tạo ứng dụng, cấu
+hình, mô hình dữ liệu, tiện ích nghiệp vụ, xử lý tệp và bốn blueprint. Giao
+diện nằm trong templates và static; dữ liệu SQLite và tệp bài tập được lưu
+trong instance.
+
+Ứng dụng tạo các bảng dữ liệu khi khởi tạo. README hướng dẫn tạo lại cơ sở dữ
+liệu mẫu bằng seed.py và khởi động ứng dụng bằng app.py hoặc các script chạy
+đi kèm [1]. Do seed.py xóa dữ liệu hiện có trước khi tạo dữ liệu mẫu, thao tác
+này chỉ nên được dùng trong môi trường thử nghiệm sau khi đã hiểu ảnh hưởng
+của nó.
+
+4.2 Kết quả triển khai
+
+Các nhóm chức năng hiện diện trong mã nguồn được tổng hợp trong Bảng 4.1.
+Bảng này mô tả phạm vi triển khai, không phải số đo hiệu quả sử dụng hoặc kết
+quả đánh giá của người dùng.
+
+Bảng 4.1. Chức năng đã có trong ứng dụng
+
+| Phân hệ | Kết quả triển khai |
+|---|---|
+| Xác thực | Đăng nhập, đăng xuất, đổi mật khẩu, gửi yêu cầu quên mật khẩu; khóa tài khoản theo số lần đăng nhập sai. |
+| Quản trị | Tổng quan; quản lý khóa học, lớp, lịch, hồ sơ, ghi danh, tài khoản; báo cáo điểm danh và quản lý mở khóa điểm. |
+| Giáo viên | Danh sách lớp được phân công, lịch dạy, điểm danh, bài tập và tệp, tiến độ lớp, nhập/chốt điểm, CSV. |
+| Học viên | Khóa học mở, lớp đã ghi danh, lịch sử điểm danh, bài tập và nộp tệp, kết quả đã công bố, biểu đồ và CSV. |
+| Dữ liệu | 15 mô hình dữ liệu cho tài khoản, đào tạo, điểm danh, bài tập, điểm và nhật ký. |
+| Trình diễn và kiểm thử | Có seed.py cung cấp dữ liệu mẫu và tests_smoke.py kiểm tra một số luồng chính. |
+
+Các kết quả nổi bật về nghiệp vụ là khả năng kiểm tra điều kiện ghi danh, ngăn
+một số xung đột lịch, giới hạn quyền theo vai trò và lớp, chỉ hiển thị điểm đã
+công bố cho học viên, cũng như ghi nhật ký khi thay đổi trạng thái điểm. Với
+bài tập, hệ thống lưu tệp bằng tên nội bộ, kiểm tra định dạng và cho phép ghi
+nhận nhiều lần nộp, bao gồm trạng thái đúng hạn hoặc muộn [1].
+
+4.3 Kiểm thử và phạm vi xác nhận
+
+Dự án có tests_smoke.py sử dụng test client của Flask, vì vậy script có thể
+kiểm tra route mà không cần khởi động máy chủ web. Nội dung script bao gồm các
+trường hợp làm tròn band, bảo vệ route khi chưa đăng nhập, truy cập trang theo
+vai trò, kiểm tra điều kiện ghi danh và lịch, phân quyền lớp, điểm danh, nhập
+và chốt điểm, xuất CSV, cùng các luồng giao và nộp bài tập [1].
+
+Đây là kiểm thử khói cho các luồng chọn lọc. Báo cáo không ghi tổng số ca đạt,
+thời gian chạy hoặc tỷ lệ bao phủ vì không có kết quả chạy được cung cấp làm
+bằng chứng trong tài liệu đầu vào. Việc script tồn tại không chứng minh đã
+kiểm thử đầy đủ mọi tổ hợp dữ liệu, lỗi đồng thời, tải lớn, bảo mật, khả năng
+truy cập hoặc hoạt động trên môi trường triển khai thực tế.
+
+4.4 Đánh giá mức độ đáp ứng
+
+Đối chiếu mục tiêu ở Chương 1 với chức năng trong mã nguồn cho thấy ứng dụng
+đã hiện thực được các nghiệp vụ quản lý đào tạo cơ bản và theo dõi kết quả đã
+nêu trong phạm vi. Phân quyền theo vai trò và các kiểm tra nghiệp vụ được
+triển khai ở phía máy chủ cho một số luồng trọng yếu; giao diện hỗ trợ tải
+bảng điểm CSV và quan sát tiến độ bằng biểu đồ. Các nhận định này dựa trên
+mã nguồn và tài liệu dự án [1], không phải kết quả thử nghiệm với người dùng
+thực tế.
+
+Mặt khác, hệ thống chưa bao phủ các nghiệp vụ tài chính và giao tiếp, chưa có
+bằng chứng triển khai sản xuất, và chưa có dữ liệu định lượng để đánh giá hiệu
+năng hoặc mức độ hài lòng. Bởi vậy, kết quả phù hợp nhất với mục tiêu xây dựng
+một sản phẩm học tập và trình diễn, chưa đủ cơ sở để kết luận hệ thống đáp ứng
+toàn bộ nhu cầu vận hành của một trung tâm IELTS.
+
+4.5 Hạn chế và rủi ro còn tồn tại
+
+- Cấu hình cơ sở dữ liệu hiện dùng SQLite và chưa mô tả quy trình sao lưu,
+  phục hồi, giám sát hoặc triển khai nhiều máy chủ.
+- Luồng quên mật khẩu chỉ tạo yêu cầu để Quản trị viên xử lý thủ công; chưa
+  có email tự động, liên kết đặt lại hoặc mã xác minh.
+- Xuất dữ liệu hiện ở dạng CSV; chưa có báo cáo PDF/Excel tùy biến hoặc phân
+  tích nâng cao.
+- Không có bằng chứng về kiểm thử tải, kiểm thử bảo mật độc lập, kiểm thử khả
+  năng truy cập hoặc kiểm thử trên môi trường triển khai thực tế.
+- Cấu hình hiện có giá trị SECRET_KEY mặc định; app.py bật debug khi chạy trực
+  tiếp; README có dữ liệu đăng nhập mẫu đơn giản. Các cấu hình này phải được
+  thay đổi và đánh giá trước khi triển khai công khai. Tài liệu Flask cảnh
+  báo không sử dụng máy chủ phát triển và debugger trong môi trường sản xuất
+  [2].
+- Hình ảnh giao diện, biên bản khảo sát, danh tính cơ sở thực tập và kết quả
+  kiểm thử thực tế chưa được cung cấp, nên không thể đưa vào như bằng chứng
+  của đề tài.
+
+4.6 Hướng hoàn thiện
+
+Các bước phát triển phù hợp gồm: thay cấu hình bí mật và thiết lập môi trường
+triển khai an toàn; bổ sung sao lưu, phục hồi và ghi nhận vận hành; hoàn thiện
+luồng đặt lại mật khẩu; bổ sung nghiệp vụ thanh toán hoặc học phí nếu có yêu
+cầu; cải thiện báo cáo; và mở rộng kiểm thử chức năng, bảo mật, tải và khả năng
+truy cập. Trước khi bổ sung cần xác nhận yêu cầu với đơn vị sử dụng và đánh
+giá tác động đến mô hình dữ liệu, quyền truy cập và quy trình hiện hành.
+
+
+KẾT LUẬN
+
+Đề tài đã xây dựng một trang web quản lý một số nghiệp vụ đào tạo và theo dõi
+học tập tại trung tâm IELTS. Hệ thống phân tách chức năng theo ba vai trò
+Quản trị viên, Giáo viên và Học viên; hỗ trợ quản lý khóa học, lớp, thời khóa
+biểu, hồ sơ, ghi danh, điểm danh, bài tập và kết quả đánh giá. Các điểm đáng
+chú ý trong phạm vi triển khai gồm kiểm tra điều kiện ghi danh và xung đột
+lịch, giới hạn truy cập theo vai trò và dữ liệu được phân công, ghi nhận
+trạng thái nộp bài, công bố điểm theo kỳ, lưu nhật ký thay đổi và cung cấp
+bảng điểm CSV cùng biểu đồ theo dõi kết quả [1].
+
+Đối chiếu với mục tiêu đặt ra, sản phẩm hiện thực được các luồng quản lý đào
+tạo và theo dõi kết quả cốt lõi trong phạm vi ứng dụng. Dự án có mô hình dữ
+liệu, giao diện theo vai trò, dữ liệu mẫu và script kiểm thử khói. Tuy nhiên,
+những bằng chứng hiện có chưa đủ để kết luận về hiệu năng, mức độ an toàn qua
+đánh giá độc lập, tính sẵn sàng hoặc khả năng vận hành tại một trung tâm đang
+hoạt động. Hệ thống cũng chưa bao gồm các nghiệp vụ như thanh toán, lớp trực
+tuyến, nhắn tin và gửi email tự động.
+
+Trong giai đoạn tiếp theo, cần ưu tiên hoàn thiện cấu hình bảo mật và quy trình
+triển khai, sao lưu và phục hồi dữ liệu; tiếp đó có thể bổ sung quy trình đặt
+lại mật khẩu qua email, nghiệp vụ học phí theo yêu cầu thực tế, báo cáo linh
+hoạt và các bài kiểm thử rộng hơn. Việc phát triển nên bắt đầu bằng khảo sát
+người dùng và xác nhận yêu cầu, sau đó đánh giá bằng dữ liệu thử nghiệm có
+kiểm soát. Các nội dung này là hướng kiến nghị, chưa phải chức năng đã hoàn
+thành của phiên bản được mô tả trong báo cáo.
+
+
+TÀI LIỆU THAM KHẢO
+
+[1] “Trang Web Quản lý trung tâm IELTS,” README.md, mã nguồn ứng dụng, mô hình
+dữ liệu, sơ đồ phân tích thiết kế và tests_smoke.py, tài liệu nội bộ của đề
+tài, 2026.
+
+[2] Pallets Projects, “Quickstart — Flask Documentation (3.1.x).” [Trực tuyến].
+Có sẵn: https://flask.palletsprojects.com/en/stable/quickstart/.
+[Truy cập ngày: 13-Nov-2026].
+
+[3] Pallets Projects, “Flask-SQLAlchemy Documentation (3.1.x).”
+[Trực tuyến]. Có sẵn: https://flask-sqlalchemy.palletsprojects.com/en/stable/.
+[Truy cập ngày: 13-Nov-2026].
+
+[4] Pallets Projects, “Template Designer Documentation — Jinja (3.1.x).”
+[Trực tuyến]. Có sẵn: https://jinja.palletsprojects.com/en/stable/templates/.
+[Truy cập ngày: 13-Nov-2026].
+
+[5] “Get started with Bootstrap,” Bootstrap 5.3 Documentation. [Trực tuyến].
+Có sẵn: https://getbootstrap.com/docs/5.3/getting-started/introduction/.
+[Truy cập ngày: 13-Nov-2026].
+
+[6] “Chart.js Documentation.” [Trực tuyến].
+Có sẵn: https://www.chartjs.org/docs/latest/.
+[Truy cập ngày: 13-Nov-2026].
+
+[7] Flask-Login contributors, “Flask-Login Documentation.” [Trực tuyến].
+Có sẵn: https://flask-login.readthedocs.io/en/latest/.
+[Truy cập ngày: 13-Nov-2026].
+
+[8] IELTS, “IELTS Scoring in Detail.” [Trực tuyến].
+Có sẵn: https://ielts.org/take-a-test/your-results/ielts-scoring-in-detail.
+[Truy cập ngày: 13-Nov-2026].
+
+
+PHỤ LỤC
+
+PHỤ LỤC A. HƯỚNG DẪN CÀI ĐẶT VÀ CHẠY THỬ
+
+Các bước dưới đây được tổng hợp từ README. Nên chạy trong môi trường thử
+nghiệm, không dùng dữ liệu thật:
+
+1. Cài Python phiên bản 3.10 trở lên.
+2. Mở terminal tại thư mục dự án ielts_center.
+3. Cài các phụ thuộc bằng lệnh: pip install -r requirements.txt
+4. Nếu cần tạo lại dữ liệu trình diễn, chạy: python seed.py
+5. Khởi động ứng dụng bằng: python app.py
+6. Mở trình duyệt tại địa chỉ localhost cổng 5000 như hướng dẫn trong README.
+
+Lưu ý: seed.py xóa dữ liệu hiện có trước khi tạo dữ liệu mẫu. Không chạy lệnh
+này trên cơ sở dữ liệu có thông tin cần giữ lại. Tài khoản mẫu chỉ dùng để
+trình diễn; cần thay thông tin đăng nhập và SECRET_KEY trước khi triển khai
+ngoài môi trường cục bộ [1].
+
+PHỤ LỤC B. LUỒNG SỬ DỤNG TÓM TẮT
+
+- Quản trị viên: tạo khóa học; mở lớp; phân công giáo viên và lịch; tạo hồ sơ;
+  ghi danh học viên; quản lý tài khoản; theo dõi báo cáo; mở khóa điểm khi có
+  nhu cầu chỉnh sửa.
+- Giáo viên: đăng nhập; mở lớp được phân công; ghi nhận điểm danh; tạo bài tập
+  và tài liệu; xem bài nộp; nhập điểm theo kỳ; kiểm tra kết quả rồi chốt và
+  công bố; xuất bảng điểm lớp.
+- Học viên: đăng nhập; xem lớp và lịch của mình; theo dõi điểm danh; xem đề và
+  tài liệu; nộp bài; xem kết quả đã công bố và tải bảng điểm cá nhân.
+
+Các luồng trên chỉ mô tả những chức năng đã có trong phần mềm; tên nút, bố cục
+chi tiết và hình ảnh thao tác cần được bổ sung từ phiên bản giao diện thực tế
+nếu báo cáo được dàn thành bản nộp cuối.
+
+PHỤ LỤC C. TÀI LIỆU MINH HỌA CẦN ĐÍNH KÈM KHI HOÀN THIỆN
+
+Tài liệu đầu vào chưa kèm ảnh chụp giao diện hoặc bản in kết quả kiểm thử. Khi
+chuẩn bị bản nộp, có thể bổ sung ảnh chụp thực tế cho trang tổng quan từng vai
+trò, quản lý lớp, điểm danh, nộp bài và kết quả học tập; mỗi ảnh phải được đánh
+số theo chương, đặt chú thích dưới hình, dẫn chiếu trong nội dung và ghi nguồn
+nếu không do nhóm thực hiện. Có thể đưa sơ đồ use case, sơ đồ lớp, sơ đồ hoạt
+động và các biểu đồ tuần tự trong PHAN-TICH-THIET-KE-HE-THONG.md vào phụ lục
+hoặc chương thiết kế, bảo đảm số hiệu và dẫn chiếu nhất quán.
