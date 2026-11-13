@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}Điểm danh của tôi{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-start mb-3 flex-wrap gap-2">
+  <div>
+    <h4 class="page-title mb-1">Điểm danh của tôi</h4>
+    <p class="page-sub mb-0">Lịch sử có ngày học, thời điểm ghi nhận và thống kê theo tháng.</p>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <form method="get" class="d-flex align-items-end gap-2 flex-wrap">
+      <div>
+        <label for="attendance-month" class="form-label">Tháng</label>
+        <input id="attendance-month" type="month" name="month" class="form-control"
+               value="{{ month_value }}" required>
+      </div>
+      <button class="btn btn-outline-primary">Xem thống kê</button>
+    </form>
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-6 col-lg-3">
+    <div class="stat-card">
+      <div class="stat-value">{{ total_sessions }}</div>
+      <div class="stat-label">Tổng buổi trong tháng</div>
+    </div>
+  </div>
+  {% for status, label in attendance_statuses.items() %}
+    <div class="col-6 col-lg-3">
+      <div class="stat-card {% if status == 'absent' %}accent{% elif status == 'present' %}green{% endif %}">
+        <div class="stat-value">{{ monthly_summary[status] }}</div>
+        <div class="stat-label">{{ label }}</div>
+      </div>
+    </div>
+  {% endfor %}
+</div>
+
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <span><i class="bi bi-calendar-check"></i> Lịch sử điểm danh tháng {{ month_value }}</span>
+    <div class="d-flex gap-3 small">
+      <span class="text-success fw-semibold">■ Có mặt</span>
+      <span class="text-danger fw-semibold">■ Vắng</span>
+      <span class="text-warning fw-semibold">■ Đến muộn</span>
+    </div>
+  </div>
+  <div class="table-responsive">
+    <table class="table attendance-matrix mb-0">
+      <thead>
+        <tr>
+          <th class="attendance-name">Lớp học</th>
+          {% for day in month_days %}
+            <th class="attendance-day" title="{{ '%02d'|format(day) }}/{{ month_value[5:7] }}/{{ month_value[:4] }}">{{ day }}</th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+      {% for enrollment in attendance_rows %}
+        <tr>
+          <th scope="row" class="attendance-name">{{ enrollment.classroom.code }}</th>
+          {% for day in month_days %}
+            {% set record = attendance_matrix.get(enrollment.id, {}).get(day) %}
+            {% set status_class = 'attendance-' ~ record.status if record else '' %}
+            <td class="attendance-cell {{ status_class }}"
+                {% if record %}title="{{ attendance_statuses[record.status] }} · ghi nhận {{ record.marked_at | datetime_vn }}"{% endif %}>
+              {% if record %}
+                {% if record.status == 'present' %}Có mặt{% elif record.status == 'absent' %}Vắng{% else %}Muộn{% endif %}
+                <small>{{ record.marked_at.strftime('%H:%M') }}</small>
+              {% endif %}
+            </td>
+          {% endfor %}
+        </tr>
+      {% else %}
+        <tr><td colspan="{{ month_days|length + 1 }}" class="text-center text-muted py-4">Chưa có lớp học để hiển thị trong tháng này.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

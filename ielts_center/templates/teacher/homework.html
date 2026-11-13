@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}Bài tập về nhà{% endblock %}
+
+{% block content %}
+<div class="mb-3">
+  <h4 class="page-title mb-1">Bài tập về nhà</h4>
+  <p class="page-sub mb-0">Giao đề bài, tài liệu và hạn nộp; theo dõi bài nộp của học viên.</p>
+</div>
+
+<div class="card mb-4">
+  <div class="card-header"><i class="bi bi-plus-circle"></i> Giao bài tập mới</div>
+  <div class="card-body">
+    {% if classes %}
+      <form method="post" action="{{ url_for('teacher.create_homework') }}" enctype="multipart/form-data">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label for="homework-class" class="form-label">Lớp học</label>
+            <select id="homework-class" name="class_id" class="form-select" required>
+              {% for classroom in classes %}
+                <option value="{{ classroom.id }}">{{ classroom.code }} · {{ classroom.course.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label for="homework-deadline" class="form-label">Hạn nộp</label>
+            <input id="homework-deadline" name="deadline" type="datetime-local" class="form-control" required>
+          </div>
+          <div class="col-12">
+            <label for="homework-title" class="form-label">Tên bài tập</label>
+            <input id="homework-title" name="title" class="form-control" maxlength="150" required>
+          </div>
+          <div class="col-12">
+            <label for="homework-instructions" class="form-label">Yêu cầu đề bài</label>
+            <textarea id="homework-instructions" name="instructions" class="form-control" rows="4" required></textarea>
+          </div>
+          <div class="col-12">
+            <label for="homework-materials" class="form-label">Tài liệu đính kèm (không bắt buộc)</label>
+            <input id="homework-materials" name="materials" type="file" class="form-control" multiple
+                   accept=".7z,.csv,.doc,.docx,.jpg,.jpeg,.m4a,.mp3,.pdf,.png,.ppt,.pptx,.rar,.txt,.wav,.xls,.xlsx,.zip">
+            <div class="form-text">Tối đa 10 tệp, mỗi lần tải lên tổng dung lượng không quá 64 MB.</div>
+          </div>
+          <div class="col-12">
+            <button class="btn btn-primary" style="background:var(--brand);border:none">
+              <i class="bi bi-send"></i> Giao bài tập
+            </button>
+          </div>
+        </div>
+      </form>
+    {% else %}
+      <p class="text-muted mb-0">Bạn chưa được phân công lớp nào để giao bài tập.</p>
+    {% endif %}
+  </div>
+</div>
+
+<h5 class="page-title mb-3">Bài tập đã giao</h5>
+<div class="row g-3">
+  {% for homework in assignments %}
+    <div class="col-lg-6">
+      <div class="card h-100">
+        <div class="card-header d-flex justify-content-between align-items-center gap-2">
+          <span>{{ homework.classroom.code }}</span>
+          <span class="badge {% if homework.deadline < now %}bg-secondary{% else %}bg-primary{% endif %}">
+            Hạn {{ homework.deadline | datetime_vn }}
+          </span>
+        </div>
+        <div class="card-body">
+          <h6>{{ homework.title }}</h6>
+          <p class="small text-muted mb-3">{{ homework.instructions | truncate(180) }}</p>
+          <a class="btn btn-sm btn-outline-primary" href="{{ url_for('teacher.homework_detail', homework_id=homework.id) }}">
+            Xem bài nộp ({{ homework.submissions|length }})
+          </a>
+          <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('teacher.edit_homework', homework_id=homework.id) }}">
+            <i class="bi bi-pencil"></i> Sửa
+          </a>
+        </div>
+      </div>
+    </div>
+  {% else %}
+    <div class="col-12"><div class="alert alert-info">Bạn chưa giao bài tập nào.</div></div>
+  {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Bài tập về nhà{% endblock %}
+
+{% block content %}
+<div class="mb-3">
+  <h4 class="page-title mb-1">Bài tập về nhà</h4>
+  <p class="page-sub mb-0">Theo dõi đề bài, tài liệu, hạn nộp và trạng thái bài đã nộp.</p>
+</div>
+
+<div class="row g-3">
+  {% for homework in assignments %}
+    {% set submission = latest_submissions[homework.id] %}
+    <div class="col-lg-6">
+      <div class="card h-100">
+        <div class="card-header d-flex justify-content-between align-items-center gap-2">
+          <span>{{ homework.classroom.code }}</span>
+          {% if submission %}
+            <span class="badge {% if submission.is_late %}bg-danger{% else %}bg-success{% endif %}">
+              {{ 'Đã nộp muộn' if submission.is_late else 'Đã nộp đúng hạn' }}
+            </span>
+          {% elif homework.deadline < now %}
+            <span class="badge bg-warning text-dark">Quá hạn · vẫn được nộp</span>
+          {% else %}
+            <span class="badge bg-secondary">Chưa nộp</span>
+          {% endif %}
+        </div>
+        <div class="card-body">
+          <h6>{{ homework.title }}</h6>
+          <p class="small text-muted mb-2">Hạn nộp: {{ homework.deadline | datetime_vn }}</p>
+          <p class="small text-muted mb-3">{{ homework.instructions | truncate(180) }}</p>
+          <a class="btn btn-sm btn-primary" style="background:var(--brand);border:none"
+             href="{{ url_for('student.homework_detail', homework_id=homework.id) }}">
+            Xem bài tập và nộp bài
+          </a>
+        </div>
+      </div>
+    </div>
+  {% else %}
+    <div class="col-12"><div class="alert alert-info">Hiện chưa có bài tập nào được giao cho các lớp của bạn.</div></div>
+  {% endfor %}
+</div>
+{% endblock %}

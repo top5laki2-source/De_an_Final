@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}{{ homework.title }} · Bài tập{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-start mb-3 flex-wrap gap-2">
+  <div>
+    <h4 class="page-title mb-1">{{ homework.title }}</h4>
+    <p class="page-sub mb-0">{{ homework.classroom.code }} · Giáo viên {{ homework.teacher.full_name }} · Hạn nộp {{ homework.deadline | datetime_vn }}</p>
+  </div>
+  <a href="{{ url_for('student.homework_list') }}" class="btn btn-light">← Bài tập về nhà</a>
+</div>
+
+<div class="card mb-3">
+  <div class="card-header">Yêu cầu đề bài</div>
+  <div class="card-body"><div class="homework-instructions">{{ homework.instructions }}</div></div>
+  {% if homework.materials %}
+    <ul class="list-group list-group-flush">
+      {% for material in homework.materials %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          <span><i class="bi bi-paperclip"></i> {{ material.original_filename }}</span>
+          <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('student.download_homework_material', homework_id=homework.id, material_id=material.id) }}">Tải tài liệu</a>
+        </li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+</div>
+
+{% if enrollment.status == 'studying' %}
+  <div class="card mb-3">
+    <div class="card-header"><i class="bi bi-cloud-arrow-up"></i> Nộp bài tập</div>
+    <div class="card-body">
+      <form method="post" action="{{ url_for('student.submit_homework', homework_id=homework.id) }}" enctype="multipart/form-data">
+        <label for="submission-files" class="form-label">Chọn tệp bài làm</label>
+        <input id="submission-files" name="files" type="file" class="form-control" multiple required
+               accept=".7z,.csv,.doc,.docx,.jpg,.jpeg,.m4a,.mp3,.pdf,.png,.ppt,.pptx,.rar,.txt,.wav,.xls,.xlsx,.zip">
+        <div class="form-text mb-3">Tối đa 10 tệp, tổng dung lượng mỗi lần tải lên không quá 64 MB. Bài nộp sau hạn vẫn được nhận và sẽ đánh dấu nộp muộn.</div>
+        <button class="btn btn-primary" style="background:var(--brand);border:none">
+          <i class="bi bi-send"></i> Nộp bài
+        </button>
+      </form>
+    </div>
+  </div>
+{% else %}
+  <div class="alert alert-secondary">Bạn không thể nộp bài vì trạng thái ghi danh hiện tại là {{ enrollment.status_label }}.</div>
+{% endif %}
+
+<div class="card">
+  <div class="card-header">Lịch sử nộp bài</div>
+  <div class="card-body">
+    {% for submission in homework.submissions if submission.enrollment_id == enrollment.id %}
+      <div class="border rounded p-3 mb-2">
+        <div class="mb-2">
+          Nộp lúc {{ submission.submitted_at | datetime_vn }}
+          <span class="badge {% if submission.is_late %}bg-danger{% else %}bg-success{% endif %}">
+            {{ 'Nộp muộn' if submission.is_late else 'Đúng hạn' }}
+          </span>
+        </div>
+        {% for file in submission.files %}
+          <a class="btn btn-sm btn-outline-primary me-1 mb-1"
+             href="{{ url_for('student.download_own_homework_submission', homework_id=homework.id, file_id=file.id) }}">
+            <i class="bi bi-download"></i> {{ file.original_filename }}
+          </a>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="text-muted mb-0">Bạn chưa nộp bài tập này.</p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

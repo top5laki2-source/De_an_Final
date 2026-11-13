@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Sửa {{ homework.title }} · Bài tập{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-start mb-3 flex-wrap gap-2">
+  <div>
+    <h4 class="page-title mb-1">Sửa bài tập</h4>
+    <p class="page-sub mb-0">{{ homework.classroom.code }} · Cập nhật yêu cầu và tài liệu đã giao.</p>
+  </div>
+  <a href="{{ url_for('teacher.homework_detail', homework_id=homework.id) }}" class="btn btn-light">← Chi tiết bài tập</a>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <form method="post" enctype="multipart/form-data">
+      <div class="row g-3">
+        <div class="col-12">
+          <label for="homework-title" class="form-label">Tên bài tập</label>
+          <input id="homework-title" name="title" class="form-control" maxlength="150" value="{{ title }}" required>
+        </div>
+        <div class="col-12">
+          <label for="homework-instructions" class="form-label">Yêu cầu đề bài</label>
+          <textarea id="homework-instructions" name="instructions" class="form-control" rows="6" required>{{ instructions }}</textarea>
+        </div>
+        <div class="col-md-6">
+          <label for="homework-deadline" class="form-label">Hạn nộp</label>
+          <input id="homework-deadline" name="deadline" type="datetime-local" class="form-control" value="{{ deadline }}" required>
+        </div>
+        <div class="col-12">
+          <label class="form-label">Tài liệu hiện có</label>
+          {% if homework.materials %}
+            <div class="list-group">
+              {% for material in homework.materials %}
+                <label class="list-group-item d-flex align-items-center gap-2">
+                  <input class="form-check-input m-0" type="checkbox" name="remove_materials" value="{{ material.id }}">
+                  <span class="flex-grow-1">{{ material.original_filename }}</span>
+                  <span class="text-muted small">Chọn để gỡ</span>
+                </label>
+              {% endfor %}
+            </div>
+          {% else %}
+            <p class="text-muted mb-0">Bài tập chưa có tài liệu đính kèm.</p>
+          {% endif %}
+        </div>
+        <div class="col-12">
+          <label for="homework-materials" class="form-label">Thêm tài liệu</label>
+          <input id="homework-materials" name="materials" type="file" class="form-control" multiple
+                 accept=".7z,.csv,.doc,.docx,.jpg,.jpeg,.m4a,.mp3,.pdf,.png,.ppt,.pptx,.rar,.txt,.wav,.xls,.xlsx,.zip">
+          <div class="form-text">Tối đa 10 tài liệu cho mỗi bài tập. Tệp đã chọn gỡ sẽ được tính vào chỗ trống.</div>
+        </div>
+        <div class="col-12 d-flex gap-2">
+          <button class="btn btn-primary" style="background:var(--brand);border:none">
+            <i class="bi bi-check-lg"></i> Lưu thay đổi
+          </button>
+          <a href="{{ url_for('teacher.homework_detail', homework_id=homework.id) }}" class="btn btn-light">Hủy</a>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

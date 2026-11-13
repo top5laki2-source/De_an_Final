@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}{{ homework.title }} · Bài tập{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-start mb-3 flex-wrap gap-2">
+  <div>
+    <h4 class="page-title mb-1">{{ homework.title }}</h4>
+    <p class="page-sub mb-0">{{ homework.classroom.code }} · Hạn nộp {{ homework.deadline | datetime_vn }}</p>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="{{ url_for('teacher.edit_homework', homework_id=homework.id) }}" class="btn btn-outline-primary">
+      <i class="bi bi-pencil"></i> Sửa bài tập
+    </a>
+    <a href="{{ url_for('teacher.homework_list') }}" class="btn btn-light">← Bài tập về nhà</a>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-header">Yêu cầu đề bài</div>
+  <div class="card-body"><div class="homework-instructions">{{ homework.instructions }}</div></div>
+  {% if homework.materials %}
+    <ul class="list-group list-group-flush">
+      {% for material in homework.materials %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          <span><i class="bi bi-paperclip"></i> {{ material.original_filename }}</span>
+          <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('teacher.download_homework_material', homework_id=homework.id, material_id=material.id) }}">Tải tài liệu</a>
+        </li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+</div>
+
+<div class="card">
+  <div class="card-header">Bài nộp của học viên</div>
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead><tr><th>Mã HV</th><th>Học viên</th><th>Lịch sử nộp</th></tr></thead>
+      <tbody>
+      {% for enrollment in enrollments %}
+        <tr>
+          <td>{{ enrollment.student.code or '—' }}</td>
+          <td class="fw-semibold">{{ enrollment.student.full_name }}</td>
+          <td>
+            {% for submission in submissions_by_enrollment[enrollment.id] %}
+              <div class="border rounded p-2 mb-2">
+                <div class="small mb-2">
+                  {{ submission.submitted_at | datetime_vn }}
+                  <span class="badge {% if submission.is_late %}bg-danger{% else %}bg-success{% endif %}">
+                    {{ 'Nộp muộn' if submission.is_late else 'Đúng hạn' }}
+                  </span>
+                </div>
+                {% for file in submission.files %}
+                  <a class="btn btn-sm btn-outline-primary me-1 mb-1"
+                     href="{{ url_for('teacher.download_homework_submission', homework_id=homework.id, file_id=file.id) }}">
+                    <i class="bi bi-download"></i> {{ file.original_filename }}
+                  </a>
+                {% endfor %}
+              </div>
+            {% else %}
+              <span class="text-muted">Chưa nộp</span>
+            {% endfor %}
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="3" class="text-center text-muted py-4">Lớp chưa có học viên.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
